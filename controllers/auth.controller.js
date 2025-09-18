@@ -85,7 +85,7 @@ exports.login = async (req, res) => {
         if (!match) return res.status(401).json({ message: 'Sai mật khẩu' });
 
         const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
-        res.json({ token, role: user.role });
+        res.json({ token, id: user.id, role: user.role });
     } catch (err) {
         res.status(500).json({ message: 'Lỗi đăng nhập', error: err.message });
     }
@@ -209,5 +209,13 @@ exports.updateProfile = async (req, res) => {
         res.json(updatedProfile);
     } catch (err) {
         res.status(500).json({ message: 'Lỗi cập nhật profile', error: err.message });
+    }
+};
+exports.getPatientAccount = async (req, res) => {
+    try {
+        const patients = await Patient.findAll();
+        res.json(patients);
+    } catch (err) {
+        res.status(500).json({ message: 'Lỗi lấy danh sách tài khoản', error: err.message });
     }
 };

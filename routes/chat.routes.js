@@ -1,0 +1,11 @@
+const express = require("express");
+const router = express.Router();
+const chatController = require("../controllers/chat.controller");
+const upload = require("../middleware/uploadCloudinary");
+const adminAuth = require("../middleware/adminAuth");
+router.get("/conversation/:userId1/:userId2", chatController.getConversation);
+router.get("/conversations", adminAuth, chatController.getAllConversations);
+router.post("/", upload.single("file"), chatController.saveMessage);
+router.put("/:id", upload.single("file"), chatController.updateMessage);
+router.delete("/:id", chatController.deleteMessage);
+module.exports = router;

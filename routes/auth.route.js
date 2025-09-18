@@ -11,5 +11,6 @@ router.post('/resend-otp', authController.resendOtp);
 router.post('/change-password', authController.changePassword);
 router.get('/profile', authController.getProfile);
 router.patch('/profile', authController.updateProfile);
+router.get('/patients', authController.getPatientAccount);
 
 module.exports = router;
