@@ -11,6 +11,9 @@ router.get('/momo/return', paymentController.momoReturn);
 // IPN (MoMo gọi server-to-server)
 router.post('/momo/ipn', paymentController.momoIpn);
 
+// Thanh toán tiền mặt
+router.post('/cash/create', paymentController.createCashPayment);
+
 module.exports = router;
 
 

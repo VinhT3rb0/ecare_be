@@ -230,4 +230,56 @@ exports.momoIpn = async (req, res) => {
     }
 };
 
+exports.createCashPayment = async (req, res) => {
+    try {
+        const { invoice_id } = req.body;
+        const invoice = await Invoice.findByPk(invoice_id);
+        if (!invoice) {
+            return res.status(404).json({ message: 'Không tìm thấy hóa đơn' });
+        }
+        if (invoice.status === 'paid') {
+            return res.status(400).json({ message: 'Hóa đơn đã được thanh toán' });
+        }
+        await Invoice.update({
+            status: 'paid',
+            payment_method: 'Cash'
+        }, {
+            where: { id: invoice_id }
+        });
+        if (invoice.appointment_id) {
+            await Appointment.update({ status: 'completed' }, {
+                where: { id: invoice.appointment_id }
+            });
+        }
+        await savePaymentRecord(invoice_id, 'Cash', null);
+        const inv = await Invoice.findByPk(invoice_id, {
+            include: [{
+                model: InvoiceMedicine,
+                as: 'invoiceMedicines'
+            }]
+        });
+
+        if (inv?.invoiceMedicines && inv.invoiceMedicines.length > 0) {
+            for (const im of inv.invoiceMedicines) {
+                const med = await Medicine.findByPk(im.medicine_id);
+                if (med && med.stock_quantity >= im.quantity) {
+                    med.stock_quantity -= im.quantity;
+                    await med.save();
+                }
+            }
+        }
+        return res.json({
+            message: 'Thanh toán tiền mặt thành công',
+            data: { invoice_id }
+        });
+
+    } catch (err) {
+        console.error('createCashPayment error:', err);
+        res.status(500).json({
+            message: 'Lỗi xử lý thanh toán tiền mặt',
+            error: err.message
+        });
+    }
+};
+
 

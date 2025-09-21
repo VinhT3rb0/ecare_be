@@ -9,13 +9,24 @@ const combineDateTime = (dateStr, timeStr) => {
     return new Date(`${dateStr}T${timeStr}`);
 };
 
-// Kiểm tra xung đột: cùng ngày và cùng doctor hoặc cùng room
-const checkScheduleConflict = async (doctor_id, date, room_id, excludeId = null) => {
+// Kiểm tra xung đột theo khung giờ: cùng ngày và trùng giờ với cùng bác sĩ hoặc cùng phòng
+const checkScheduleConflict = async (doctor_id, date, room_id, start_time, end_time, excludeId = null) => {
     const whereClause = {
         date,
-        [Op.or]: [
-            { doctor_id },
-            { room_id }
+        [Op.and]: [
+            {
+                [Op.or]: [
+                    { doctor_id },
+                    { room_id }
+                ]
+            },
+            // Overlap condition: existing.start < newEnd AND existing.end > newStart
+            {
+                start_time: { [Op.lt]: end_time || '23:59:59' },
+            },
+            {
+                end_time: { [Op.gt]: start_time || '00:00:00' },
+            }
         ]
     };
 
@@ -104,7 +115,7 @@ exports.createSchedule = async (req, res) => {
         }
 
         // Check conflict - cùng ngày bác sĩ hoặc phòng đã có lịch
-        const conflict = await checkScheduleConflict(doctor_id, date, room_id);
+        const conflict = await checkScheduleConflict(doctor_id, date, room_id, start_time || '08:00:00', end_time || '16:30:00');
         if (conflict) {
             return res.status(409).json({ success: false, message: 'Xung đột lịch làm việc: bác sĩ hoặc phòng đã có lịch trong ngày' });
         }
@@ -156,7 +167,7 @@ exports.createBulkSchedules = async (req, res) => {
                     errors.push({ index: i, message: 'Ngày trong quá khứ' });
                     continue;
                 }
-                const conflict = await checkScheduleConflict(doctor_id, date, room_id);
+                const conflict = await checkScheduleConflict(doctor_id, date, room_id, start_time || '08:00:00', end_time || '16:30:00');
                 if (conflict) {
                     errors.push({ index: i, message: 'Xung đột lịch' });
                     continue;
@@ -177,7 +188,9 @@ exports.createBulkSchedules = async (req, res) => {
             }
         }
 
-        res.status(201).json({ success: true, message: `Tạo ${created.length}/${schedules.length} lịch`, data: created, errors: errors.length ? errors : undefined });
+        // Nếu một số lịch tạo được và một số lỗi, trả về 207 Multi-Status hợp lý hơn
+        const statusCode = created.length > 0 && errors.length > 0 ? 207 : 201;
+        res.status(statusCode).json({ success: true, message: `Tạo ${created.length}/${schedules.length} lịch`, data: created, errors: errors.length ? errors : undefined });
     } catch (err) {
         console.error('❌ Error createBulkSchedules:', err);
         res.status(500).json({ success: false, message: 'Lỗi tạo hàng loạt', error: err.message });

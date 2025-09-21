@@ -15,6 +15,8 @@ const invoiceRoutes = require('./routes/invoice.route');
 const paymentRoutes = require('./routes/payment.routes');
 const medicineRoutes = require('./routes/medicine.routes');
 const medicalRecordRoutes = require('./routes/medical_record.routes');
+const statsRoutes = require('./routes/stats.routes');
+const reviewRoutes = require('./routes/review.routes')
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -32,5 +34,7 @@ app.use('/api/app-invoice/v1/', invoiceRoutes);
 app.use('/api/app-payment/v1/', paymentRoutes);
 app.use('/api/app-medicine/v1/', medicineRoutes);
 app.use('/api/medical-record/v1/', medicalRecordRoutes);
+app.use('/api/app-stats/v1/', statsRoutes);
+app.use('/api/app-review/v1/', reviewRoutes)
 
 module.exports = app;

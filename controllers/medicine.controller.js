@@ -115,35 +115,32 @@ exports.deleteMedicine = async (req, res) => {
 exports.updateMedicineStock = async (req, res) => {
     try {
         const { medications } = req.body;
-        
-        if (!medications || !Array.isArray(medications) || medications.length === 0) {
+        if (!Array.isArray(medications) || medications.length === 0) {
             return res.status(400).json({ message: 'Dữ liệu thuốc không hợp lệ' });
         }
 
         const results = [];
         const errors = [];
 
-        // Xử lý từng thuốc trong danh sách
         for (const item of medications) {
-            const { medicine_id, quantity } = item;
-            
+            const { medicine_id, quantity, action } = item;
+
             if (!medicine_id || !quantity || quantity <= 0) {
                 errors.push({ medicine_id, message: 'Thông tin thuốc không hợp lệ' });
                 continue;
             }
 
-            try {
-                const medicine = await Medicine.findByPk(medicine_id);
-                
-                if (!medicine) {
-                    errors.push({ medicine_id, message: 'Không tìm thấy thuốc' });
-                    continue;
-                }
+            const medicine = await Medicine.findByPk(medicine_id);
+            if (!medicine) {
+                errors.push({ medicine_id, message: 'Không tìm thấy thuốc' });
+                continue;
+            }
 
-                // Kiểm tra số lượng tồn kho
+            if (action === 'export') {
+                // Xuất thuốc: giảm tồn kho
                 if (medicine.stock_quantity < quantity) {
-                    errors.push({ 
-                        medicine_id, 
+                    errors.push({
+                        medicine_id,
                         name: medicine.name,
                         message: 'Số lượng tồn kho không đủ',
                         available: medicine.stock_quantity,
@@ -151,26 +148,32 @@ exports.updateMedicineStock = async (req, res) => {
                     });
                     continue;
                 }
-
-                // Cập nhật số lượng tồn kho
                 medicine.stock_quantity -= quantity;
-                await medicine.save();
-                
-                results.push({
-                    medicine_id,
-                    name: medicine.name,
-                    previous_stock: medicine.stock_quantity + quantity,
-                    current_stock: medicine.stock_quantity,
-                    quantity_reduced: quantity
-                });
-            } catch (err) {
-                errors.push({ medicine_id, message: `Lỗi cập nhật: ${err.message}` });
+            } else if (action === 'import') {
+                // Nhập thuốc: tăng tồn kho
+                medicine.stock_quantity += quantity;
+            } else {
+                errors.push({ medicine_id, message: 'Hành động không hợp lệ' });
+                continue;
             }
+
+            await medicine.save();
+
+            results.push({
+                medicine_id,
+                name: medicine.name,
+                action,
+                quantity,
+                current_stock: medicine.stock_quantity
+            });
         }
 
         res.json({
             success: errors.length === 0,
-            message: errors.length === 0 ? 'Cập nhật số lượng tồn kho thành công' : 'Có lỗi xảy ra khi cập nhật số lượng tồn kho',
+            message:
+                errors.length === 0
+                    ? 'Cập nhật số lượng tồn kho thành công'
+                    : 'Có lỗi xảy ra khi cập nhật số lượng tồn kho',
             results,
             errors: errors.length > 0 ? errors : undefined
         });
@@ -178,3 +181,4 @@ exports.updateMedicineStock = async (req, res) => {
         res.status(500).json({ message: 'Lỗi cập nhật số lượng tồn kho', error: err.message });
     }
 };
+
