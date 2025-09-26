@@ -100,7 +100,7 @@ exports.getDoctorAverageRating = async (req, res) => {
         if (!doctor_id) return res.status(400).json({ message: 'Thiếu doctor_id' });
 
         const row = await Review.findOne({
-            attributes: [[fn('AVG', col('rating')), 'avg_rating'], [fn('COUNT', col('id')), 'count']],
+            attributes: [[fn('AVG', col('rating')), 'avg_rating'], [fn('COUNT', col('Review.id')), 'count']],
             where: { doctor_id },
             raw: true,
         });
@@ -126,7 +126,7 @@ exports.getReviewTrends = async (req, res) => {
         const rows = await Review.findAll({
             attributes: [
                 [literal(dateExpr), 'time'],
-                [fn('COUNT', col('id')), 'value']
+                [fn('COUNT', col('Review.id')), 'value']
             ],
             where: { created_at: { [Op.between]: [start, end] } },
             group: [literal(dateExpr)],
@@ -151,9 +151,9 @@ exports.getTopDoctorsByRating = async (req, res) => {
             attributes: [
                 'doctor_id',
                 [fn('AVG', col('rating')), 'avg_rating'],
-                [fn('COUNT', col('id')), 'total_reviews']
+                [fn('COUNT', col('Review.id')), 'total_reviews']
             ],
-            include: [{ model: Doctor, attributes: ['id', 'full_name'] }],
+            include: [{ model: Doctor, attributes: ['id', 'full_name', 'avatar_img'] }],
             where: { created_at: { [Op.between]: [start, end] } },
             group: ['doctor_id', 'Doctor.id', 'Doctor.full_name'],
             order: [[literal('avg_rating'), 'DESC']],
@@ -166,6 +166,7 @@ exports.getTopDoctorsByRating = async (req, res) => {
             data: rows.map(r => ({
                 doctor_id: r.doctor_id,
                 doctor_name: r.Doctor?.full_name,
+                doctor_avatar: r.Doctor?.avatar_img,
                 avg_rating: parseFloat(r.avg_rating).toFixed(2),
                 total_reviews: parseInt(r.total_reviews, 10)
             }))

@@ -7,7 +7,7 @@ const upload = require('../middleware/uploadCloudinary'); // file vừa tạo
 // Lấy danh sách gói khám
 router.get('/', packageController.getAllPackages);
 // Lấy gói khám theo department
-router.get('/department/:department_id', adminAuth, packageController.getPackagesByDepartment);
+router.get('/department/:department_id', packageController.getPackagesByDepartment);
 // Thêm gói khám mới
 router.post('/', adminAuth, upload.single('image'), packageController.createPackage);
 // Sửa thông tin gói khám
