@@ -5,12 +5,12 @@ const Payment = require('../models/payment.model');
 const Medicine = require('../models/medicine.model');
 const https = require("https");
 const InvoiceMedicine = require('../models/invoice_medicine.model');
-const MOMO_PARTNER_CODE = (process.env.MOMO_PARTNER_CODE).trim() || 'MOMO';
-const MOMO_ACCESS_KEY = (process.env.MOMO_ACCESS_KEY).trim() || '';
-const MOMO_SECRET_KEY = (process.env.MOMO_SECRET_KEY).trim() || '';
+const MOMO_PARTNER_CODE = (process.env.MOMO_PARTNER_CODE || 'MOMO').trim();
+const MOMO_ACCESS_KEY = (process.env.MOMO_ACCESS_KEY || '').trim();
+const MOMO_SECRET_KEY = (process.env.MOMO_SECRET_KEY || '').trim();
 const MOMO_ENDPOINT = process.env.MOMO_ENDPOINT || 'https://test-payment.momo.vn/v2/gateway/api/create';
 const MOMO_RETURN_URL = process.env.MOMO_RETURN_URL || 'http://localhost:3000/management/payment/momo/return';
-const MOMO_IPN_URL = process.env.MOMO_IPN_URL;
+const MOMO_IPN_URL = process.env.MOMO_IPN_URL || '';
 function signMomo(fields) {
     const raw =
         `accessKey=${fields.accessKey}` +
